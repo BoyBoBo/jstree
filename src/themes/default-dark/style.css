@@ -382,6 +382,12 @@
   background: -webkit-linear-gradient(top, #5fa2db 0%, #5fa2db 100%);
   background: linear-gradient(to bottom, #5fa2db 0%, #5fa2db 100%);
 }
+.jstree-default-dark .jstree-load-more,
+.jstree-default-dark .jstree-load-all {
+  font-size: 12px;
+  font-weight: 700;
+  font-style: italic;
+}
 .jstree-default-dark .jstree-node {
   min-height: 24px;
   line-height: 24px;
