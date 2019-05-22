@@ -513,6 +513,19 @@
 				e.preventDefault();
 				this.edit(e.currentTarget);
 			}
+		},
+		/**
+		 * Pagination loading.
+		 * @name $.jstree.defaults.core.pagination
+		 */
+		pagination: {
+			default: false,
+			load_more_text: 'More',
+			load_more_icon: '',
+			load_all: false,
+			load_all_text: 'All',
+			load_all_icon: '',
+			page_size: 100
 		}
 	};
 	$.jstree.core.prototype = {
@@ -2319,6 +2332,7 @@
 		_redraw : function () {
 			var nodes = this._model.force_full_redraw ? this._model.data[$.jstree.root].children.concat([]) : this._model.changed.concat([]),
 				f = document.createElement('UL'), tmp, i, j, fe = this._data.core.focused;
+			
 			for(i = 0, j = nodes.length; i < j; i++) {
 				tmp = this.redraw_node(nodes[i], true, this._model.force_full_redraw);
 				if(tmp && this._model.force_full_redraw) {
@@ -2388,11 +2402,65 @@
 				k = d.createElement('UL');
 				k.setAttribute('role', 'group');
 				k.className = 'jstree-children';
-				for(i = 0, j = obj.children.length; i < j; i++) {
-					k.appendChild(this.redraw_node(obj.children[i], true, true));
+				var root_children;
+				if (this.settings.core.pagination.default) {
+					root_children = obj.children.slice(0, this.settings.core.pagination.page_size);
+				} else {
+					root_children = obj.children;
+				}
+				for(i = 0, j = root_children.length; i < j; i++) {
+					k.appendChild(this.redraw_node(root_children[i], true, true));
+				}
+				if (this.settings.core.pagination.default) {
+					if (obj.children.length > this.settings.core.pagination.page_size) {
+						this._append_load_more(k, obj.children, this.settings.core.pagination.page_size);
+					}
 				}
 				node.appendChild(k);
 			}
+		},
+		_append_load_more : function (target, children, index) {
+			var _this = this;
+			var load_more_elem = $('<li class="jstree-node jstree-leaf">' +
+				'<i class="jstree-icon jstree-ocl" role="presentation"></i>' +
+				'<a class="jstree-anchor jstree-load-more" href="javascript:;">' +
+				'<i class="' + this.settings.core.pagination.load_more_icon + '"></i>' +
+				this.settings.core.pagination.load_more_text +
+				'</a>' +
+				(this.settings.core.pagination.load_all ? 
+				('<a class="jstree-anchor jstree-load-all" href="javascript:;">' +
+				'<i class="' + this.settings.core.pagination.load_all_icon + '"></i>' +
+				this.settings.core.pagination.load_all_text +
+				'</a>') : '') +
+				'</li>').on('click', function (e) {
+					if ($(e.target).hasClass('jstree-load-more')) {
+						target.removeChild(this);
+						_this._load_more(target, children, index, false, true, true);
+					}
+					if ($(e.target).hasClass('jstree-load-all')) {
+						target.removeChild(this);
+						_this._load_more(target, children, index, true, true, true);
+					}
+				})[0];
+			target.appendChild(load_more_elem);
+		},
+		_load_more : function (node, children, index, all, deep, is_callback, force_render) {
+			var k = document.createElement('UL');
+			k.setAttribute('role', 'group');
+			k.className = 'jstree-children';
+			var arr;
+			if (all) {
+				arr = children.slice(index);
+			} else {
+				arr = children.slice(index, index + this.settings.core.pagination.page_size);
+			}
+			for(var i = 0, j = arr.length; i < j; i++) {
+				k.appendChild(this.redraw_node(arr[i], deep, is_callback, force_render));
+			}
+			if (!all && children.length > index + this.settings.core.pagination.page_size) {
+				this._append_load_more(k, children, index + this.settings.core.pagination.page_size);
+			}
+			node.appendChild(k);
 		},
 		/**
 		 * redraws a single node. Used internally.
